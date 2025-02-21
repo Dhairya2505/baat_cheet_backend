@@ -16,6 +16,8 @@ const UserDuplicacy_1 = __importDefault(require("./middlewares/UserDuplicacy"));
 const CheckUser_1 = __importDefault(require("./middlewares/CheckUser"));
 const app = (0, express_1.default)();
 const httpServer = app.listen(process.env.PORT || 8000);
+const room_app = (0, express_1.default)();
+const roomServer = room_app.listen(process.env.PORT || 8001);
 app.use((0, cors_1.default)({
     origin: ["http://localhost:3000"],
     methods: ["GET", "POST"],
@@ -27,6 +29,21 @@ app.post('/signup', UserDuplicacy_1.default, signup_1.signup);
 app.get(`/signin`, CheckUser_1.default, signin_1.signin);
 app.get(`/valid_token`, valid_token_1.valid_token);
 const users = {};
+const rooms = {};
+// {
+//   "room_id": {
+//     "room_name": {
+//       "username": websocket,
+//       "username": websocket
+//     }
+//   },
+//   "room_id": {
+//     "room_name": {
+//       "username": websocket,
+//       "username": websocket
+//     }
+//   } 
+// }
 const messages = [];
 // [
 // {
@@ -41,6 +58,21 @@ const messages = [];
 //     {"user_to": message}
 //   ]
 // }
+// ]
+const room_messages = [];
+// [
+//   {
+//     'room_id':[
+//       {"user_from": message},
+//       {"user_from": message},
+//     ]
+//   },
+//   {
+//     'room_id':[
+//       {"user_from": message},
+//       {"user_from": message},
+//     ]
+//   }
 // ]
 const wss = new ws_1.WebSocketServer({ server: httpServer });
 wss.on('connection', function socket_handler(ws) {
@@ -100,6 +132,7 @@ wss.on('connection', function socket_handler(ws) {
                                 socket.send(JSON.stringify({
                                     event: "recieve-chat",
                                     from: _from,
+                                    to: _to,
                                     message: message
                                 }));
                             }
@@ -118,6 +151,105 @@ wss.on('connection', function socket_handler(ws) {
                             from: _from,
                             message: message
                         }));
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+    });
+});
+const rss = new ws_1.WebSocketServer({ server: roomServer });
+rss.on('connection', function socket_handler(rs) {
+    rs.on('error', console.error);
+    rs.on('message', function message(data, isBinary) {
+        data = JSON.parse(data.toString());
+        switch (data.event) {
+            case "token":
+                const room_id = data.room_id;
+                const room_name = data.room_name;
+                const username = data.username;
+                if (rooms[room_id]) {
+                    if (rooms[room_id][room_name]) {
+                        rooms[room_id][room_name][username] = rs;
+                    }
+                    else {
+                        rooms[room_id][room_name] = {
+                            [username]: rs
+                        };
+                    }
+                }
+                else {
+                    rooms[room_id] = {
+                        [room_name]: {
+                            [username]: rs
+                        }
+                    };
+                }
+                break;
+            case "get-chats":
+                const room = data.room_id;
+                room_messages.map((messageObj) => {
+                    Object.entries(messageObj).map(([key, messageArray]) => {
+                        if (key == room) {
+                            rs.send(JSON.stringify({
+                                event: "recieve-chats",
+                                chats: messageArray
+                            }));
+                        }
+                    });
+                });
+                break;
+            case "send-message":
+                const _from = data.username;
+                const message = data.message;
+                const roomID = data.room_id;
+                const roomName = data.room_name;
+                let found = false;
+                room_messages.map((messageObj) => {
+                    Object.entries(messageObj).map(([key, messageArray]) => {
+                        if (key == roomID) {
+                            found = true;
+                            messageArray.push({ [_from]: message });
+                            for (const room in rooms) {
+                                if (room == roomID) {
+                                    for (const room_Name in rooms[room]) {
+                                        if (room_Name == roomName) {
+                                            for (const user in rooms[room][room_Name]) {
+                                                rooms[room][room_Name][user].send(JSON.stringify({
+                                                    event: "recieve-message",
+                                                    roomID,
+                                                    _from,
+                                                    message
+                                                }));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                });
+                if (!found) {
+                    let array = [{ [_from]: message }];
+                    room_messages.push({
+                        [`${roomID}`]: array
+                    });
+                    for (const room in rooms) {
+                        if (room == roomID) {
+                            for (const room_Name in rooms[room]) {
+                                if (room_Name == roomName) {
+                                    for (const user in rooms[room][room_Name]) {
+                                        rooms[room][room_Name][user].send(JSON.stringify({
+                                            event: "recieve-message",
+                                            roomID,
+                                            _from,
+                                            message
+                                        }));
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
                 break;
