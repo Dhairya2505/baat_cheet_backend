@@ -102,11 +102,36 @@ wss.on('connection', function socket_handler(ws){
           case "token":
             if(data.username){
               users[data.username] = ws
+              let groups: Record<string, Record<string, string>> = {}
+              for(const room_id in rooms){
+                for(const room_name in rooms[room_id]){
+                  for(const user in rooms[room_id][room_name]){
+                    if(user == data.username){
+                      if(groups[room_id]){
+                          if(groups[room_id][room_name]){
+                            groups[room_id][room_name] = ""
+                          } else {
+                            groups[room_id] = {
+                              [room_name]: ""
+                            }
+                          }
+                      } else {
+                        groups = {
+                          [room_id]: {
+                            [room_name]: ""
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
               wss.clients.forEach(function each(client) {
                 try {
                   client.send(JSON.stringify({
                     event: "users",
-                    users
+                    users,
+                    groups
                   }))
                 } catch (error) {
                   
@@ -212,6 +237,7 @@ rss.on('connection', function socket_handler(rs){
             }
           }
         }
+
         break;
 
       case "get-chats":
