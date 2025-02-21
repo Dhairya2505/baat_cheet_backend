@@ -1,4 +1,4 @@
-import User from "../database/MONGO_DB";
+import models from "../database/MONGO_DB";
 import { hash } from "bcrypt";
 import jwt from 'jsonwebtoken';
 import { config } from "dotenv";
@@ -30,7 +30,7 @@ export const signup = async (req: Request, res: Response) => {
     try {
         const SECRET_KEY = process.env.SECRET_KEY;
         if(SECRET_KEY){
-            const user = await new User({
+            const user = await new models.User({
                 userName : username,
                 email : email,
                 Password : hashedPassword

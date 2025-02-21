@@ -28,7 +28,7 @@ const CheckUser = (req, res, next) => __awaiter(void 0, void 0, void 0, function
         return;
     }
     try {
-        const user = yield MONGO_DB_js_1.default.findOne({
+        const user = yield MONGO_DB_js_1.default.User.findOne({
             userName: username
         });
         if (user) {

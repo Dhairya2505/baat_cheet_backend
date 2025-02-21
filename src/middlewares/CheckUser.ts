@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import APIError from '../utils/APIError.js';
-import User from './../database/MONGO_DB.js'
+import models from './../database/MONGO_DB.js'
 import { compare } from 'bcrypt';
 
 const CheckUser = async (req: Request, res: Response, next: NextFunction) => {
@@ -26,7 +26,7 @@ const CheckUser = async (req: Request, res: Response, next: NextFunction) => {
 
     try {
         
-        const user = await User.findOne({
+        const user = await models.User.findOne({
             userName: username
         })
 

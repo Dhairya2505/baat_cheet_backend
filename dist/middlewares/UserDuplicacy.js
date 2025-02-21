@@ -27,13 +27,13 @@ const UserDuplicacy = (req, res, next) => __awaiter(void 0, void 0, void 0, func
             res.json(new APIError_js_1.default(400, "Email required"));
             return;
         }
-        const user = yield MONGO_DB_js_1.default.findOne({
+        const user = yield MONGO_DB_js_1.default.User.findOne({
             userName: username
         });
-        const user1 = yield MONGO_DB_js_1.default.findOne({
+        const user1 = yield MONGO_DB_js_1.default.User.findOne({
             email: email
         });
-        const user2 = yield MONGO_DB_js_1.default.findOne({
+        const user2 = yield MONGO_DB_js_1.default.User.findOne({
             userName: username,
             email: email
         });

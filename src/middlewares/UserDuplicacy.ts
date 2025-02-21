@@ -1,5 +1,5 @@
 import APIError from './../utils/APIError.js';
-import User from './../database/MONGO_DB.js';
+import models from './../database/MONGO_DB.js';
 import { NextFunction, Request, Response } from 'express';
 
 const UserDuplicacy = async (req: Request, res: Response, next: NextFunction) => {
@@ -25,15 +25,15 @@ const UserDuplicacy = async (req: Request, res: Response, next: NextFunction) =>
             return;
         }
     
-        const user = await User.findOne({
+        const user = await models.User.findOne({
             userName : username
         });
     
-        const user1 = await User.findOne({
+        const user1 = await models.User.findOne({
             email : email
         })
     
-        const user2 = await User.findOne({
+        const user2 = await models.User.findOne({
             userName : username,
             email : email
         })

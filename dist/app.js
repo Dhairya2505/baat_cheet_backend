@@ -16,8 +16,6 @@ const UserDuplicacy_1 = __importDefault(require("./middlewares/UserDuplicacy"));
 const CheckUser_1 = __importDefault(require("./middlewares/CheckUser"));
 const app = (0, express_1.default)();
 const httpServer = app.listen(process.env.PORT || 8000);
-const room_app = (0, express_1.default)();
-const roomServer = room_app.listen(process.env.PORT || 8001);
 app.use((0, cors_1.default)({
     origin: ["http://localhost:3000"],
     methods: ["GET", "POST"],
@@ -78,11 +76,6 @@ const wss = new ws_1.WebSocketServer({ server: httpServer });
 wss.on('connection', function socket_handler(ws) {
     ws.on('error', console.error);
     ws.on('message', function message(data, isBinary) {
-        // wss.clients.forEach(function each(client: any) {
-        //     if (client.readyState === WebSocket.OPEN) {
-        //         client.send(data, { binary: isBinary });
-        //     }
-        // });
         data = JSON.parse(data.toString());
         switch (data.event) {
             case "token":
@@ -181,73 +174,62 @@ wss.on('connection', function socket_handler(ws) {
                     }
                 }
                 break;
-            default:
-                break;
-        }
-    });
-});
-const rss = new ws_1.WebSocketServer({ server: roomServer });
-rss.on('connection', function socket_handler(rs) {
-    rs.on('error', console.error);
-    rs.on('message', function message(data, isBinary) {
-        data = JSON.parse(data.toString());
-        switch (data.event) {
-            case "token":
+            case "room-token":
                 const room_id = data.room_id;
                 const room_name = data.room_name;
                 const username = data.username;
                 if (rooms[room_id]) {
                     if (rooms[room_id][room_name]) {
-                        rooms[room_id][room_name][username] = rs;
+                        rooms[room_id][room_name][username] = ws;
                     }
                     else {
                         rooms[room_id][room_name] = {
-                            [username]: rs
+                            [username]: ws
                         };
                     }
                 }
                 else {
                     rooms[room_id] = {
                         [room_name]: {
-                            [username]: rs
+                            [username]: ws
                         }
                     };
                 }
                 break;
-            case "get-chats":
+            case "get-room-chats":
                 const room = data.room_id;
                 room_messages.map((messageObj) => {
                     Object.entries(messageObj).map(([key, messageArray]) => {
                         if (key == room) {
-                            rs.send(JSON.stringify({
-                                event: "recieve-chats",
+                            ws.send(JSON.stringify({
+                                event: "recieve-room-chats",
                                 chats: messageArray
                             }));
                         }
                     });
                 });
                 break;
-            case "send-message":
-                const _from = data.username;
-                const message = data.message;
+            case "send-room-message":
+                const from_ = data.username;
+                const _message = data.message;
                 const roomID = data.room_id;
                 const roomName = data.room_name;
-                let found = false;
+                let _found = false;
                 room_messages.map((messageObj) => {
                     Object.entries(messageObj).map(([key, messageArray]) => {
                         if (key == roomID) {
-                            found = true;
-                            messageArray.push({ [_from]: message });
+                            _found = true;
+                            messageArray.push({ [from_]: _message });
                             for (const room in rooms) {
                                 if (room == roomID) {
                                     for (const room_Name in rooms[room]) {
                                         if (room_Name == roomName) {
                                             for (const user in rooms[room][room_Name]) {
                                                 rooms[room][room_Name][user].send(JSON.stringify({
-                                                    event: "recieve-message",
+                                                    event: "recieve-room-message",
                                                     roomID,
-                                                    _from,
-                                                    message
+                                                    _from: from_,
+                                                    message: _message
                                                 }));
                                             }
                                         }
@@ -257,8 +239,8 @@ rss.on('connection', function socket_handler(rs) {
                         }
                     });
                 });
-                if (!found) {
-                    let array = [{ [_from]: message }];
+                if (!_found) {
+                    let array = [{ [from_]: _message }];
                     room_messages.push({
                         [`${roomID}`]: array
                     });
@@ -268,10 +250,10 @@ rss.on('connection', function socket_handler(rs) {
                                 if (room_Name == roomName) {
                                     for (const user in rooms[room][room_Name]) {
                                         rooms[room][room_Name][user].send(JSON.stringify({
-                                            event: "recieve-message",
+                                            event: "recieve-room-message",
                                             roomID,
-                                            _from,
-                                            message
+                                            _from: from_,
+                                            message: _message
                                         }));
                                     }
                                 }

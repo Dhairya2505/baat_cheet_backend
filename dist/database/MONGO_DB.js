@@ -30,5 +30,5 @@ const UsersSchema = new mongoose_1.default.Schema({
     email: String,
     Password: String
 });
-let User;
-exports.default = User = mongoose_1.default.model('users', UsersSchema);
+const User = mongoose_1.default.model('users', UsersSchema);
+exports.default = { User };

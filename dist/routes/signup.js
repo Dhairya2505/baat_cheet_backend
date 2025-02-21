@@ -35,7 +35,7 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const SECRET_KEY = process.env.SECRET_KEY;
         if (SECRET_KEY) {
-            const user = yield new MONGO_DB_1.default({
+            const user = yield new MONGO_DB_1.default.User({
                 userName: username,
                 email: email,
                 Password: hashedPassword

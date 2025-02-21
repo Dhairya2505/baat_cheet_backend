@@ -16,9 +16,6 @@ import CheckUser from './middlewares/CheckUser'
 const app = express()
 const httpServer = app.listen(process.env.PORT || 8000)
 
-const room_app = express()
-const roomServer = room_app.listen(process.env.PORT || 8001)
-
 app.use(CORS({
   origin: ["http://localhost:3000"],
   methods: ["GET", "POST"],
@@ -92,11 +89,6 @@ wss.on('connection', function socket_handler(ws){
   ws.on('error', console.error);
 
   ws.on('message', function message(data: any, isBinary: boolean) {
-      // wss.clients.forEach(function each(client: any) {
-      //     if (client.readyState === WebSocket.OPEN) {
-      //         client.send(data, { binary: isBinary });
-      //     }
-      // });
       data = JSON.parse(data.toString())
       switch (data.event) {
           case "token":
@@ -200,6 +192,99 @@ wss.on('connection', function socket_handler(ws){
               }
               break;
 
+          case "room-token":
+            const room_id = data.room_id;
+            const room_name = data.room_name;
+            const username = data.username;
+            if(rooms[room_id]){
+              if(rooms[room_id][room_name]){
+                rooms[room_id][room_name][username] = ws;
+              } else {
+                rooms[room_id][room_name] = {
+                  [username]: ws
+                }
+              }
+            } else {
+              rooms[room_id] = {
+                [room_name]: {
+                  [username]: ws
+                }
+              }
+            }
+    
+            break;
+
+          case "get-room-chats":
+            const room = data.room_id;
+            room_messages.map((messageObj) => {
+              Object.entries(messageObj).map(([key, messageArray]) => {
+                if(key == room){
+                  ws.send(JSON.stringify({
+                      event: "recieve-room-chats",
+                      chats: messageArray
+                  })) 
+                }
+              })
+            })
+    
+            break;
+
+          case "send-room-message":
+            const from_ = data.username
+            const _message = data.message
+            const roomID = data.room_id
+            const roomName = data.room_name;
+            let _found = false;
+    
+            room_messages.map((messageObj) => {
+              Object.entries(messageObj).map(([key, messageArray]) => {
+                if(key == roomID){
+                  _found = true;
+                  messageArray.push({[from_]: _message})
+                  
+                  for (const room in rooms){
+                    if(room == roomID){
+                      for(const room_Name in rooms[room]){
+                        if(room_Name == roomName){
+                          for(const user in rooms[room][room_Name]){
+                            rooms[room][room_Name][user].send(JSON.stringify({
+                              event: "recieve-room-message",
+                              roomID,
+                              _from: from_,
+                              message: _message
+                            }))
+                          }
+                        }
+                      }
+                    }
+                  }
+                }                  
+              });
+            });
+            if(!_found){
+              let array = [{[from_]: _message}]
+              room_messages.push({
+                [`${roomID}`]: array
+              })
+              for (const room in rooms){
+                if(room == roomID){
+                  for(const room_Name in rooms[room]){
+                    if(room_Name == roomName){
+                      for(const user in rooms[room][room_Name]){
+                        rooms[room][room_Name][user].send(JSON.stringify({
+                          event: "recieve-room-message",
+                          roomID,
+                          _from: from_,
+                          message: _message
+                        }))
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            break;
+
           default:
               break;
       }
@@ -207,114 +292,3 @@ wss.on('connection', function socket_handler(ws){
   });
 
 });
-
-const rss = new WebSocketServer({ server: roomServer });
-rss.on('connection', function socket_handler(rs){
-
-  rs.on('error', console.error);
-
-  rs.on('message', function message(data: any, isBinary: boolean){
-    
-    data = JSON.parse(data.toString())
-    
-    switch (data.event) {
-      case "token":
-        const room_id = data.room_id;
-        const room_name = data.room_name;
-        const username = data.username;
-        if(rooms[room_id]){
-          if(rooms[room_id][room_name]){
-            rooms[room_id][room_name][username] = rs;
-          } else {
-            rooms[room_id][room_name] = {
-              [username]: rs
-            }
-          }
-        } else {
-          rooms[room_id] = {
-            [room_name]: {
-              [username]: rs
-            }
-          }
-        }
-
-        break;
-
-      case "get-chats":
-        const room = data.room_id;
-        room_messages.map((messageObj) => {
-          Object.entries(messageObj).map(([key, messageArray]) => {
-            if(key == room){
-              rs.send(JSON.stringify({
-                  event: "recieve-chats",
-                  chats: messageArray
-              })) 
-            }
-          })
-        })
-
-        break;
-
-      case "send-message":
-        const _from = data.username
-        const message = data.message
-        const roomID = data.room_id
-        const roomName = data.room_name;
-        let found = false;
-
-        room_messages.map((messageObj) => {
-          Object.entries(messageObj).map(([key, messageArray]) => {
-            if(key == roomID){
-              found = true;
-              messageArray.push({[_from]: message})
-              
-              for (const room in rooms){
-                if(room == roomID){
-                  for(const room_Name in rooms[room]){
-                    if(room_Name == roomName){
-                      for(const user in rooms[room][room_Name]){
-                        rooms[room][room_Name][user].send(JSON.stringify({
-                          event: "recieve-message",
-                          roomID,
-                          _from,
-                          message
-                        }))
-                      }
-                    }
-                  }
-                }
-              }
-            }                  
-          });
-        });
-        if(!found){
-          let array = [{[_from]: message}]
-          room_messages.push({
-            [`${roomID}`]: array
-          })
-          for (const room in rooms){
-            if(room == roomID){
-              for(const room_Name in rooms[room]){
-                if(room_Name == roomName){
-                  for(const user in rooms[room][room_Name]){
-                    rooms[room][room_Name][user].send(JSON.stringify({
-                      event: "recieve-message",
-                      roomID,
-                      _from,
-                      message
-                    }))
-                  }
-                }
-              }
-            }
-          }
-        }
-        break;
-    
-      default:
-        break;
-    }
-  
-  })
-
-})
