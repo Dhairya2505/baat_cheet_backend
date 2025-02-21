@@ -17,7 +17,7 @@ const CheckUser_1 = __importDefault(require("./middlewares/CheckUser"));
 const app = (0, express_1.default)();
 const httpServer = app.listen(process.env.PORT || 8000);
 app.use((0, cors_1.default)({
-    origin: ["http://localhost:3000"],
+    origin: ["https://baatcheet-three.vercel.app"],
     methods: ["GET", "POST"],
     credentials: true
 }));
