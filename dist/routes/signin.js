@@ -29,7 +29,8 @@ const signin = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 username: username,
             }, SECRET_KEY);
             res.cookie('BCC', `Bearer ${token}`, {
-                sameSite: 'none'
+                sameSite: 'none',
+                secure: true
             });
             res.json(new APIResponse_1.default(200, "User signed in"));
             return;

@@ -22,7 +22,8 @@ export const signin = async (req: Request, res: Response) => {
             },SECRET_KEY);
         
             res.cookie('BCC', `Bearer ${token}`, {
-                sameSite: 'none'
+                sameSite: 'none',
+                secure: true
             });
             res.json(new APIResponse(
                 200,
