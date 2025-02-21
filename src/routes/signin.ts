@@ -21,7 +21,9 @@ export const signin = async (req: Request, res: Response) => {
                 username : username,
             },SECRET_KEY);
         
-            res.cookie('BCC', `Bearer ${token}`);
+            res.cookie('BCC', `Bearer ${token}`, {
+                sameSite: 'none'
+            });
             res.json(new APIResponse(
                 200,
                 "User signed in"

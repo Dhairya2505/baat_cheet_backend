@@ -28,7 +28,9 @@ const signin = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             const token = yield jsonwebtoken_1.default.sign({
                 username: username,
             }, SECRET_KEY);
-            res.cookie('BCC', `Bearer ${token}`);
+            res.cookie('BCC', `Bearer ${token}`, {
+                sameSite: 'none'
+            });
             res.json(new APIResponse_1.default(200, "User signed in"));
             return;
         }
