@@ -10,7 +10,6 @@ interface customJWTPayload extends JwtPayload{
 }
 
 export const valid_token = async (req: Request, res: Response) => {
-    console.log("Hello")
     const bearer_token = req.cookies['BCC'];
     if(bearer_token){
         if(bearer_token.split(" ").length == 2){

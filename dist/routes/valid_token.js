@@ -19,7 +19,6 @@ const APIResponse_1 = __importDefault(require("../utils/APIResponse"));
 const dotenv_1 = require("dotenv");
 (0, dotenv_1.config)();
 const valid_token = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log("Hello");
     const bearer_token = req.cookies['BCC'];
     if (bearer_token) {
         if (bearer_token.split(" ").length == 2) {
