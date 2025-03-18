@@ -17,7 +17,7 @@ const app = express()
 const httpServer = app.listen(process.env.PORT || 8000)
 
 app.use(CORS({
-  origin: ["https://baatcheet-three.vercel.app"],
+  origin: ["http://localhost:3000"],
   methods: ["GET", "POST"],
   credentials: true
 }))
